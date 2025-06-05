@@ -28,9 +28,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    const result = await verifyRes.json();
+    // globalThis.fetch 回傳 Response 型別，需明確斷言
+    const result = await (verifyRes as any).json();
 
-    if (verifyRes.ok && result.success) {
+    if ((verifyRes as any).ok && result.success) {
       return res.status(200).json({ status: 200, message: "Verification success", result });
     } else {
       return res.status(400).json({ status: 400, message: "Verification failed", result });
