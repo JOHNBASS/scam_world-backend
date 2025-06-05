@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyProof } from '@worldcoin/idkit';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -10,20 +9,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { payload, action, signal } = req.body;
 
     // 這裡請填入你的 World ID App ID
-    const app_id = process.env.WLD_APP_ID || "";
+    const app_id = process.env.WLD_APP_ID;
 
-    // 驗證 proof
-    const result = await verifyProof({
-      app_id,
-      action_id: action,
-      signal,
-      proof: payload.proof,
-      merkle_root: payload.merkle_root,
-      nullifier_hash: payload.nullifier_hash,
-      credential_type: payload.credential_type,
+    // 呼叫 World ID 官方 API 驗證 proof
+    const verifyRes = await fetch("https://developer.worldcoin.org/api/v1/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        app_id,
+        action_id: action,
+        signal,
+        proof: payload.proof,
+        merkle_root: payload.merkle_root,
+        nullifier_hash: payload.nullifier_hash,
+        credential_type: payload.credential_type,
+      }),
     });
 
-    if (result.success) {
+    const result = await verifyRes.json();
+
+    if (verifyRes.ok && result.success) {
       return res.status(200).json({ status: 200, message: "Verification success", result });
     } else {
       return res.status(400).json({ status: 400, message: "Verification failed", result });
